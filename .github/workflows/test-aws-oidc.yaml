@@ -1,0 +1,66 @@
+name: Test AWS OIDC credentials
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configure AWS credentials with OIDC
+        uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          allowed-account-ids: ${{ vars.AWS_ACCOUNT_ID }}
+          role-session-name: github-actions-${{ github.run_id }}
+
+      - name: Validate OIDC identity
+        env:
+          EXPECTED_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+          EXPECTED_ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
+        run: |
+          set -euo pipefail
+
+          actual_account_id="$(aws sts get-caller-identity --query Account --output text)"
+          actual_arn="$(aws sts get-caller-identity --query Arn --output text)"
+          expected_role_name="${EXPECTED_ROLE_ARN##*/}"
+
+          if [[ "$actual_account_id" != "$EXPECTED_ACCOUNT_ID" ]]; then
+            echo "::error::Expected AWS account $EXPECTED_ACCOUNT_ID, got $actual_account_id"
+            exit 1
+          fi
+
+          if [[ "$actual_arn" != "arn:aws:sts::${EXPECTED_ACCOUNT_ID}:assumed-role/${expected_role_name}/"* ]]; then
+            echo "::error::Expected assumed role $expected_role_name, got $actual_arn"
+            exit 1
+          fi
+
+          echo "OIDC authentication validated: $actual_arn"
+
+      - name: Test Amazon Bedrock
+        run: |
+          aws bedrock-runtime converse \
+            --model-id "us.anthropic.claude-sonnet-4-5-20250929-v1:0" \
+            --messages '[
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "text": "Respond only with: Bedrock connection successful"
+                  }
+                ]
+              }
+            ]' \
+            --inference-config '{
+              "maxTokens": 100,
+              "temperature": 0
+            }' \
+            --region ${{ secrets.AWS_REGION }} \
+            --query 'output.message.content[0].text' \
+            --output text
