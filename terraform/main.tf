@@ -28,6 +28,7 @@ resource "aws_s3_bucket" "sandbox" {
 
   tags = {
     Project     = var.project_name
+    Team        = var.team
     Environment = var.environment
   }
 }
@@ -56,6 +57,7 @@ resource "aws_security_group" "sandbox" {
 
   tags = {
     Project     = var.project_name
+    Team        = var.team
     Environment = var.environment
   }
 }
@@ -78,6 +80,7 @@ resource "aws_iam_role" "sandbox" {
 
   tags = {
     Project     = var.project_name
+    Team        = var.team
     Environment = var.environment
   }
 }
