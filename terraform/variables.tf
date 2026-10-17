@@ -4,6 +4,12 @@ variable "project_name" {
   default     = "tf-ai-reviewer"
 }
 
+variable "team" {
+  description = "Team label used for tagging sandbox resources"
+  type        = string
+  default     = "developer"
+}
+
 variable "environment" {
   description = "Environment label used for tagging sandbox resources"
   type        = string

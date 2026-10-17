@@ -5,7 +5,7 @@ on:
     paths:
       - "terraform/**.tf"
       - "terraform/.terraform.lock.hcl"
-      - ".github/workflows/terraform-review-simple.yaml"
+      - ".github/workflows/terraform-validate-security.yaml"
 
 permissions:
   contents: read
